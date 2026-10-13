@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="content">
+  <!-- Back Link -->
+  <div style="margin-bottom:14px;">
+    <a href="{{ url_for('incidents') }}" class="tiny" style="color:var(--cyan); text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+      &larr; Back to Incident Queue
+    </a>
+  </div>
+
+  <!-- War Room Header -->
+  <div class="war-room-header">
+    <div class="war-room-top">
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+          <span style="font-family:var(--font-mono); font-size:12px; color:var(--cyan); font-weight:700;">#INC-{{ '%04d'|format(incident.id) }}</span>
+          <span class="pill {{ incident.severity|lower }}">{{ incident.severity }}</span>
+          <span class="pill {{ incident.status|lower|replace(' ', '-') }}">{{ incident.status }}</span>
+          {% if incident.containment_status != 'None' %}
+          <span class="pill {{ 'critical' if incident.containment_status in ['Isolated','Blocked'] else 'warning' }}">
+            🛡️ {{ incident.containment_status }}
+          </span>
+          {% endif %}
+        </div>
+        <h1 style="font-size:22px; color:#fff; font-weight:700;">{{ incident.title }}</h1>
+        <div class="tiny muted" style="margin-top:6px;">
+          Detected via <b style="color:var(--text-dim)">{{ incident.source }}</b> &bull; Created: {{ incident.created_at }} &bull; Assigned: <b style="color:#fff;">{{ incident.assigned_to }}</b>
+        </div>
+      </div>
+
+      <!-- Quick Triage Form (Status & Assignee) -->
+      <form method="post" action="{{ url_for('update_status', incident_id=incident.id) }}" style="display:flex; gap:8px; align-items:center;">
+        <select name="status" style="width:130px; font-size:12px;">
+          {% for s in ['New', 'In Progress', 'Containment', 'Resolved', 'Closed'] %}
+          <option {{ 'selected' if s == incident.status else '' }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <select name="assigned_to" style="width:140px; font-size:12px;">
+          {% for a in ['Analyst Sarah', 'SOC Lead Alex', 'Auto-Triage Bot'] %}
+          <option {{ 'selected' if a == incident.assigned_to else '' }}>{{ a }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn secondary sm" type="submit">Update</button>
+      </form>
+    </div>
+
+    <!-- Emergency Containment Action Toolbar -->
+    <div class="action-bar">
+      <span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Containment Actions:</span>
+
+      {% set attacker_ip = None %}
+      {% set target_host = None %}
+      {% set target_user = None %}
+      {% for art in incident.artifacts %}
+        {% if art.type == 'IP' and not attacker_ip %}{% set attacker_ip = art.value %}{% endif %}
+        {% if art.type in ['Host', 'Endpoint'] and not target_host %}{% set target_host = art.value %}{% endif %}
+        {% if art.type == 'User' and not target_user %}{% set target_user = art.value %}{% endif %}
+      {% endfor %}
+
+      <!-- Block IP on Firewall -->
+      <form method="post" action="{{ url_for('execute_containment_action', incident_id=incident.id) }}">
+        <input type="hidden" name="action_type" value="Block IP">
+        <input type="hidden" name="target" value="{{ attacker_ip or '185.220.101.5' }}">
+        <input type="hidden" name="system" value="Palo Alto NGFW">
+        <button class="btn danger sm" type="submit" data-confirm="Push immediate DROP rule for {{ attacker_ip or '185.220.101.5' }} to Perimeter Firewall?">
+          🛡️ Block IP ({{ attacker_ip or '185.220.101.5' }})
+        </button>
+      </form>
+
+      <!-- Isolate Host via EDR -->
+      <form method="post" action="{{ url_for('execute_containment_action', incident_id=incident.id) }}">
+        <input type="hidden" name="action_type" value="Isolate Host">
+        <input type="hidden" name="target" value="{{ target_host or 'WS-ENDPOINT-01' }}">
+        <input type="hidden" name="system" value="CrowdStrike Falcon">
+        <button class="btn warning sm" type="submit" data-confirm="Sever network connectivity for host {{ target_host or 'WS-ENDPOINT-01' }} via EDR agent?">
+          💻 Isolate Host ({{ target_host or 'WS-ENDPOINT-01' }})
+        </button>
+      </form>
+
+      <!-- Suspend User in AD -->
+      <form method="post" action="{{ url_for('execute_containment_action', incident_id=incident.id) }}">
+        <input type="hidden" name="action_type" value="Suspend User">
+        <input type="hidden" name="target" value="{{ target_user or 'svc_compromised' }}">
+        <input type="hidden" name="system" value="Active Directory LDAP">
+        <button class="btn secondary sm" type="submit" data-confirm="Lock credentials and revoke active sessions for user {{ target_user or 'svc_compromised' }}?">
+          👤 Suspend User ({{ target_user or 'svc_compromised' }})
+        </button>
+      </form>
+
+      <!-- Run Playbook Trigger Modal -->
+      <button class="btn primary sm" data-modal-open="playbookTriggerModal">
+        ⚡ Launch Playbook
+      </button>
+    </div>
+  </div>
+
+  <!-- War Room Workspace Columns -->
+  <div class="grid two-col">
+    <!-- Left Column: Details & Extracted IOCs -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <!-- Incident Overview -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Incident Telemetry & Context</h2>
+          <span class="pill {{ 'critical' if incident.severity=='Critical' else 'high' }}">{{ incident.mitre_technique }}</span>
+        </div>
+        <p style="color:var(--text-dim); line-height:1.6; font-size:13px; margin-bottom:16px;">
+          {{ incident.details }}
+        </p>
+
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; background:var(--bg-card-alt); padding:12px; border-radius:8px; border:1px solid var(--border-subtle);">
+          <div>
+            <div class="tiny muted">MITRE ATT&CK Technique</div>
+            <div style="font-weight:600; color:#fff; font-size:12px; margin-top:2px;">{{ incident.mitre_technique }}</div>
+          </div>
+          <div>
+            <div class="tiny muted">Containment Status</div>
+            <div style="font-weight:600; color:var(--cyan); font-size:12px; margin-top:2px;">{{ incident.containment_status }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extracted Indicators of Compromise (IOCs) -->
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Extracted Indicators of Compromise (IOCs)</h2>
+            <div class="sub">Threat intelligence enrichment with multi-engine scanning</div>
+          </div>
+          <span class="tiny" style="color:var(--text-muted); font-weight:600;">{{ iocs|length }} tracked indicators</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          {% for ioc in iocs %}
+          <div class="ioc-card">
+            <div class="ioc-left">
+              <span class="ioc-type-badge">{{ ioc.ioc_type }}</span>
+              <div>
+                <div class="ioc-value">{{ ioc.value }}</div>
+                <div class="tiny muted">
+                  Enriched via Threat Intel &bull; Status: <b style="color:#fff;">{{ ioc.status }}</b>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:14px;">
+              <!-- Threat Score Meter -->
+              <div class="threat-meter">
+                <span style="font-weight:700; color:{{ '#ef4444' if ioc.threat_score >= 75 else ('#f59e0b' if ioc.threat_score >= 50 else '#10b981') }}; font-family:var(--font-mono);">
+                  {{ ioc.threat_score }}/100
+                </span>
+                <div class="meter-bar">
+                  <div class="meter-fill" style="width:{{ ioc.threat_score }}%; background:{{ '#ef4444' if ioc.threat_score >= 75 else ('#f59e0b' if ioc.threat_score >= 50 else '#10b981') }};"></div>
+                </div>
+              </div>
+
+              <span class="pill {{ ioc.reputation|lower }}">{{ ioc.reputation }}</span>
+
+              {% if ioc.status != 'Blocked' %}
+              <form method="post" action="{{ url_for('execute_containment_action', incident_id=incident.id) }}">
+                <input type="hidden" name="action_type" value="Block {{ ioc.ioc_type }}">
+                <input type="hidden" name="target" value="{{ ioc.value }}">
+                <input type="hidden" name="system" value="Perimeter Gateway">
+                <button class="btn danger sm" type="submit" data-confirm="Blacklist {{ ioc.value }} across perimeter blocklists?">
+                  Block
+                </button>
+              </form>
+              {% else %}
+              <span class="pill blocked">Blocked</span>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
+          <div class="tiny muted" style="text-align:center; padding:20px;">No IOCs recorded for this incident.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Playbook Execution History for this Case -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Playbook Response Pipeline</h2>
+          <span class="sub">{{ executions|length }} executed</span>
+        </div>
+
+        {% for ex in executions %}
+        <div style="background:var(--bg-card-alt); border:1px solid var(--border-subtle); border-radius:8px; padding:14px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-weight:600; color:#fff;">{{ ex.playbook_name }}</span>
+            <span class="pill {{ 'warning' if ex.status=='Awaiting Approval' else ('low' if ex.status=='Completed' else 'high') }}">
+              {{ ex.status }}
+            </span>
+          </div>
+
+          <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
+            Triggered by {{ ex.triggered_by }} &bull; Step {{ ex.current_step }} of {{ ex.total_steps }} &bull; {{ ex.started_at }}
+          </div>
+
+          {% if ex.status == 'Awaiting Approval' %}
+          <div class="approval-callout">
+            <div>
+              <div style="font-weight:600; color:#fcd34d; font-size:12px;">⚠️ Containment Approval Gate Required</div>
+              <div style="font-size:11px; color:var(--text-dim);">Automated pipeline paused for human sign-off before executing containment actions.</div>
+            </div>
+            <form method="post" action="{{ url_for('approve_playbook_step', exec_id=ex.id) }}">
+              <button class="btn warning sm" type="submit">
+                Approve & Execute Containment
+              </button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="tiny muted" style="padding:15px; text-align:center;">
+          No response playbooks have been triggered for this incident yet.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Right Column: Interactive War Room Timeline & Notes -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <!-- Analyst Note Form -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Analyst Investigation Notes</h2>
+          <span class="sub">Collaborative War Room</span>
+        </div>
+
+        <form method="post" action="{{ url_for('add_incident_note', incident_id=incident.id) }}">
+          <div style="margin-bottom:10px;">
+            <textarea name="note" required rows="3" placeholder="Record evidence, IOC analysis findings, containment verification..."></textarea>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <select name="author" style="width:160px; font-size:12px;">
+              <option>Analyst Sarah</option>
+              <option>SOC Lead Alex</option>
+            </select>
+            <button class="btn primary sm" type="submit">Post Note & Log Timeline</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Real-time Incident Timeline -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Incident Timeline & Audit Trail</h2>
+          <span class="sub">Immutable chronological log</span>
+        </div>
+
+        <div class="timeline">
+          {% for tl in timeline %}
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-header">
+              <span class="timeline-author">{{ tl.author }} &bull; <span style="color:var(--cyan);">{{ tl.action_type }}</span></span>
+              <span class="timeline-time">{{ tl.timestamp }}</span>
+            </div>
+            <div class="timeline-msg">
+              {{ tl.message }}
+            </div>
+          </div>
+          {% else %}
+          <div class="tiny muted" style="padding:15px; text-align:center;">No timeline logs recorded yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Playbook Trigger Modal -->
+<div class="modal-overlay" id="playbookTriggerModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h2 style="font-size:16px; color:#fff;">Launch Playbook on #INC-{{ '%04d'|format(incident.id) }}</h2>
+        <span style="font-size:12px; color:var(--text-muted);">Select an orchestrated response workflow to execute</span>
+      </div>
+      <button class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      {% for pb in playbooks %}
+      <form method="post" action="{{ url_for('run_playbook', pb_id=pb.id) }}">
+        <input type="hidden" name="incident_id" value="{{ incident.id }}">
+        <input type="hidden" name="triggered_by" value="Analyst Manual Trigger">
+        <div style="background:var(--bg-card-alt); border:1px solid var(--border-subtle); border-radius:8px; padding:14px; display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <div style="font-weight:600; color:#fff; font-size:13px;">{{ pb.name }}</div>
+            <div class="tiny muted" style="margin-top:2px;">Category: {{ pb.category }} &bull; Trigger: {{ pb.severity_trigger }}</div>
+          </div>
+          <button class="btn sm primary" type="submit">Run Workflow &rarr;</button>
+        </div>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

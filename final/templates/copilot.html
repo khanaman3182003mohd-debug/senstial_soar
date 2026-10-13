@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="content">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">ARTIFICIAL INTELLIGENCE // SOC COPILOT</div>
+      <h1>Sentinel AI Threat Hunter & SOC Assistant</h1>
+      <p>Autonomous LLM reasoning engine for alert triage, MITRE ATT&CK correlation, and automated response guidance.</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="pill low">
+        <span class="live-pulse" style="width:6px; height:6px;"></span>
+        Copilot Brain Online
+      </span>
+    </div>
+  </div>
+
+  <div class="grid two-col" style="min-height:650px;">
+    <!-- Chat Column -->
+    <div class="panel" style="display:flex; flex-direction:column; padding:0; overflow:hidden;">
+      <div style="padding:16px 20px; border-bottom:1px solid var(--border-subtle); background:var(--bg-card-alt); display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="sim-icon" style="width:34px; height:34px; background:rgba(139,92,246,0.15); color:#a78bfa; border-color:rgba(139,92,246,0.3);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+              <rect x="4" y="8" width="16" height="12" rx="2"/>
+              <line x1="9" y1="13" x2="9.01" y2="13"/>
+              <line x1="15" y1="13" x2="15.01" y2="13"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-weight:700; color:#fff; font-size:13px;">Sentinel Copilot v3.0</div>
+            <div class="tiny" style="color:var(--text-muted);">Trained on MITRE ATT&CK, NIST SP 800-61 & Threat Intelligence</div>
+          </div>
+        </div>
+        <span class="tiny mono" style="color:var(--cyan);">Model: SOC-DeepHunter-v3</span>
+      </div>
+
+      <!-- Messages Stream -->
+      <div id="copilotChatMessages" style="flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:16px; max-height:480px;">
+        <!-- Initial Assistant Message -->
+        <div class="chat-msg bot">
+          <div class="chat-avatar bot">AI</div>
+          <div class="chat-bubble bot">
+            <p>Greetings, <b>{{ current_user.name }}</b>. I am Sentinel Copilot, your real-time SOC incident intelligence partner.</p>
+            <p style="margin-top:6px;">I can inspect our local database, calculate threat scores, recommend isolation playbooks, or guide containment gates.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Prompt Chips -->
+      <div style="padding:10px 16px; background:rgba(0,0,0,0.2); border-top:1px solid var(--border-subtle); display:flex; gap:8px; overflow-x:auto;">
+        <button class="chip-btn" data-copilot-prompt="Analyze the latest incident in our queue">🔍 Triage Latest Incident</button>
+        <button class="chip-btn" data-copilot-prompt="What is the recommended playbook for ransomware?">☣️ Ransomware Procedure</button>
+        <button class="chip-btn" data-copilot-prompt="Check reputation and defense for 185.220.101.5">🌐 Check IP 185.220.101.5</button>
+        <button class="chip-btn" data-copilot-prompt="Summarize active incidents and containment status">📊 SOC Summary</button>
+      </div>
+
+      <!-- Input Bar -->
+      <div style="padding:16px; border-top:1px solid var(--border-subtle); background:var(--bg-card);">
+        <form id="copilotChatForm" style="display:flex; gap:10px;">
+          <input id="copilotInput" placeholder="Ask Sentinel Copilot (e.g. 'How do I isolate WS-FIN-04?', 'Explain MITRE T1110')..." required style="flex:1;">
+          <button class="btn primary" type="submit" id="copilotSubmitBtn">
+            Send ⚡
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right Column: Context & Fast Playbook Dispatcher -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Active Cases Telemetry</h2>
+          <span class="sub">Direct Copilot Focus</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          {% for inc in incidents %}
+          <div style="background:var(--bg-card-alt); padding:10px 12px; border-radius:8px; border:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600; color:#fff; font-size:12px;">#INC-{{ '%04d'|format(inc.id) }} &bull; {{ inc.title[:24] }}</div>
+              <span class="pill {{ inc.severity|lower }}" style="margin-top:4px;">{{ inc.severity }}</span>
+            </div>
+            <button class="btn secondary sm" data-copilot-prompt="Perform deep forensic triage on incident #{{ inc.id }}: {{ inc.title }}">
+              Triage AI
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Autonomous Skills Matrix</h2>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div class="skill-item">
+            <span>🛡️ Automated Containment Policy Generator</span>
+            <span class="tiny mono" style="color:var(--emerald);">ACTIVE</span>
+          </div>
+          <div class="skill-item">
+            <span>🔍 IOC VirusTotal & AbuseIPDB Synthesizer</span>
+            <span class="tiny mono" style="color:var(--emerald);">ACTIVE</span>
+          </div>
+          <div class="skill-item">
+            <span>💻 Living-Off-The-Land Command Deobfuscator</span>
+            <span class="tiny mono" style="color:var(--emerald);">ACTIVE</span>
+          </div>
+          <div class="skill-item">
+            <span>⚡ Multi-Zone Firewall Drop Dispatcher</span>
+            <span class="tiny mono" style="color:var(--emerald);">ACTIVE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

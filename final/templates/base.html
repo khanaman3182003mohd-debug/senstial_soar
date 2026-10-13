@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SOAR Sentinel — Autonomous Security Orchestration Platform</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Chart.js for real-time cyber metrics & threat radars -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="cyber-grid-bg"></div>
+  <div class="radar-scanline"></div>
+
+  <div class="shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('dashboard') }}">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <strong>SOAR SENTINEL</strong>
+          <small>Security Operations</small>
+        </div>
+      </a>
+
+      <nav class="nav">
+        <div class="nav-label">OPERATIONS CONSOLE</div>
+        <a class="{{ 'active' if page=='dashboard' else '' }}" href="{{ url_for('dashboard') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          <span>SOC Overview</span>
+        </a>
+
+        <a class="{{ 'active' if page=='incidents' else '' }}" href="{{ url_for('incidents') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Incident Queue</span>
+        </a>
+
+        <a class="{{ 'active' if page=='copilot' else '' }}" href="{{ url_for('copilot') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+            <rect x="4" y="8" width="16" height="12" rx="2"/>
+            <line x1="9" y1="13" x2="9.01" y2="13"/>
+            <line x1="15" y1="13" x2="15.01" y2="13"/>
+          </svg>
+          <span>AI SOC Copilot</span>
+          <span class="nav-badge-ai">AI</span>
+        </a>
+
+        <a class="{{ 'active' if page=='playbooks' else '' }}" href="{{ url_for('playbooks') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span>Playbooks Hub</span>
+        </a>
+
+        <a class="{{ 'active' if page=='threat_intel' else '' }}" href="{{ url_for('threat_intel') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span>Threat Intel & IOCs</span>
+        </a>
+
+        <div class="nav-label">AUTOMATION & GOVERNANCE</div>
+        <a class="{{ 'active' if page=='actions' else '' }}" href="{{ url_for('actions') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <span>Containment Audit</span>
+        </a>
+
+        <a class="{{ 'active' if page=='integrations' else '' }}" href="{{ url_for('integrations') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="18" cy="18" r="3"/>
+            <circle cx="6" cy="6" r="3"/>
+            <path d="M13 6h3a2 2 0 0 1 2 2v7"/>
+            <line x1="6" y1="9" x2="6" y2="21"/>
+          </svg>
+          <span>Connectors</span>
+        </a>
+
+        <a class="{{ 'active' if page=='reports' else '' }}" href="{{ url_for('reports') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span>SOC Analytics</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Operator Footer -->
+      <div class="side-bottom">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <div class="avatar" style="background:{{ current_user.color }}; width:32px; height:32px; font-size:11px;">
+            {{ current_user.avatar }}
+          </div>
+          <div style="flex:1; overflow:hidden;">
+            <div style="font-weight:700; color:#fff; font-size:12px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">{{ current_user.name }}</div>
+            <div class="tiny" style="color:var(--text-muted); white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">{{ current_user.role }}</div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="tiny mono" style="color:var(--cyan); font-size:10px;">{{ current_user.clearance }}</span>
+          <a href="{{ url_for('login') }}" class="tiny" style="color:#f87171; text-decoration:none;">Switch &rarr;</a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">
+          <span>Security Operations</span>
+          <span>/</span>
+          <b>{{ page|replace('_', ' ')|capitalize }}</b>
+        </div>
+        <div class="top-right">
+          <!-- 1-Click Attack Simulator Trigger -->
+          <button class="btn warning sm" data-modal-open="simModal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            Simulate Attack
+          </button>
+
+          <!-- Chatbot Trigger in Topbar -->
+          <button class="btn secondary sm" id="topbarCopilotBtn" style="border-color:rgba(139,92,246,0.4); color:#c4b5fd;">
+            🤖 Ask AI Copilot
+          </button>
+
+          <span class="env-tag">
+            <span class="live-pulse" style="width:6px; height:6px;"></span>
+            SOC STATUS: ACTIVE DEFENSE
+          </span>
+
+          <a href="{{ url_for('login') }}" class="avatar" style="background:{{ current_user.color }}; text-decoration:none;" title="{{ current_user.name }} ({{ current_user.role }}) - Click to switch operator">
+            {{ current_user.avatar }}
+          </a>
+        </div>
+      </header>
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Global Attack Simulation Modal -->
+  <div class="modal-overlay" id="simModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h2 style="font-size:16px; color:#fff;">Inject Synthetic Attack Telemetry</h2>
+          <span style="font-size:12px; color:var(--text-muted);">Trigger automated multi-vendor containment workflows and IOC extraction</span>
+        </div>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <form method="post" action="{{ url_for('simulate_attack') }}">
+          <input type="hidden" name="type" value="bruteforce">
+          <div class="panel" style="background:var(--bg-card-alt); border-color:var(--border-subtle); display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-weight:700; color:#fff;">⚡ SSH Credential Stuffing & Tor Relay Surge</div>
+              <div style="font-size:11px; color:var(--text-muted);">High-frequency authentication attacks targeting DC01. Triggers AbuseIPDB & firewall drop gate.</div>
+            </div>
+            <button class="btn sm primary" type="submit">Launch ⚡</button>
+          </div>
+        </form>
+
+        <form method="post" action="{{ url_for('simulate_attack') }}">
+          <input type="hidden" name="type" value="ransomware">
+          <div class="panel" style="background:var(--bg-card-alt); border-color:var(--border-subtle); display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-weight:700; color:#f87171;">☣️ Ransomware Canary Tripped on Finance Host</div>
+              <div style="font-size:11px; color:var(--text-muted);">Mass encrypted file modification. Triggers CrowdStrike EDR host isolation and process kill.</div>
+            </div>
+            <button class="btn sm danger" type="submit">Launch ☣️</button>
+          </div>
+        </form>
+
+        <form method="post" action="{{ url_for('simulate_attack') }}">
+          <input type="hidden" name="type" value="phishing">
+          <div class="panel" style="background:var(--bg-card-alt); border-color:var(--border-subtle); display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-weight:700; color:#fbbf24;">🎣 Executive Spearphishing with Malicious Macro</div>
+              <div style="font-size:11px; color:var(--text-muted);">Weaponized Excel sheet delivered to executive mailbox. Triggers global Exchange purge.</div>
+            </div>
+            <button class="btn sm warning" type="submit">Launch 🎣</button>
+          </div>
+        </form>
+
+        <form method="post" action="{{ url_for('simulate_attack') }}">
+          <input type="hidden" name="type" value="c2">
+          <div class="panel" style="background:var(--bg-card-alt); border-color:var(--border-subtle); display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-weight:700; color:#38bdf8;">🌐 DNS Tunneling & Cobalt Strike C2 Beacon</div>
+              <div style="font-size:11px; color:var(--text-muted);">Periodic jitter beacon requests to hostile nameserver. Evaluates automated DNS sinkhole.</div>
+            </div>
+            <button class="btn sm secondary" type="submit">Launch 🌐</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide-out AI Copilot Drawer (Accessible from every page!) -->
+  <div class="copilot-drawer" id="copilotDrawer">
+    <div class="copilot-drawer-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="avatar" style="background:linear-gradient(135deg, #8b5cf6, #06b6d4); font-size:11px;">AI</div>
+        <div>
+          <div style="font-weight:700; color:#fff; font-size:13px;">Sentinel Copilot Assistant</div>
+          <div class="tiny" style="color:var(--emerald);">● Online & Analyzing Active SOC Queue</div>
+        </div>
+      </div>
+      <button class="modal-close" id="closeCopilotDrawer">&times;</button>
+    </div>
+
+    <div class="copilot-drawer-body" id="drawerChatMessages">
+      <div class="chat-msg bot">
+        <div class="chat-avatar bot">AI</div>
+        <div class="chat-bubble bot">
+          <p>Hello <b>{{ current_user.name }}</b>! How can I assist your investigation or containment decisions?</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Action Chips inside Drawer -->
+    <div class="drawer-chips">
+      <button class="chip-btn" data-copilot-prompt="Analyze the latest incident in our queue">🔍 Triage Latest</button>
+      <button class="chip-btn" data-copilot-prompt="What should I do for a ransomware alert?">☣️ Ransomware Steps</button>
+      <button class="chip-btn" data-copilot-prompt="Show current containment summary">🛡️ Containment Status</button>
+    </div>
+
+    <div class="copilot-drawer-footer">
+      <form id="drawerChatForm" style="display:flex; gap:8px;">
+        <input id="drawerChatInput" placeholder="Ask AI Copilot..." required style="flex:1; font-size:12px;">
+        <button class="btn primary sm" type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Floating Chatbot Launcher Button -->
+  <button class="floating-copilot-btn" id="openCopilotBtn" title="Open Sentinel AI Copilot">
+    <span class="live-pulse" style="position:absolute; top:2px; right:2px; width:10px; height:10px; background:#8b5cf6; box-shadow:0 0 10px #8b5cf6;"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+      <rect x="4" y="8" width="16" height="12" rx="2"/>
+      <line x1="9" y1="13" x2="9.01" y2="13"/>
+      <line x1="15" y1="13" x2="15.01" y2="13"/>
+    </svg>
+  </button>
+
+  <div id="toast-container"></div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

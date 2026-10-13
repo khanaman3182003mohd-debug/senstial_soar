@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="content">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">THREAT INTELLIGENCE & INDICATOR MANAGEMENT</div>
+      <h1>IOC Intelligence & Perimeter Defense</h1>
+      <p>Multi-source threat enrichment, automated scoring, and synchronized perimeter blacklisting.</p>
+    </div>
+  </div>
+
+  <!-- Search & Investigation Console -->
+  <div class="panel" style="margin-bottom:24px;">
+    <div class="panel-head">
+      <h2>Indicator Investigation Console</h2>
+      <span class="sub">Query VirusTotal, AbuseIPDB, and internal telemetry</span>
+    </div>
+
+    <form method="get" action="{{ url_for('threat_intel') }}" style="display:flex; gap:10px;">
+      <input name="q" value="{{ search_q }}" placeholder="Enter IP address (e.g. 185.220.101.5), Domain, or SHA256 file hash..." required style="flex:1;">
+      <button class="btn primary" type="submit">Investigate IOC 🔍</button>
+    </form>
+
+    {% if result %}
+    <!-- Enriched Dossier Result Card -->
+    <div style="margin-top:20px; background:var(--bg-card-alt); border:1px solid var(--cyan); border-radius:10px; padding:20px; box-shadow:0 0 15px rgba(6,182,212,0.15);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+            <span class="ioc-type-badge">{{ result.type }}</span>
+            <span class="pill {{ result.reputation|lower }}">{{ result.reputation }}</span>
+            <span class="tiny mono" style="color:var(--text-muted);">Queried at {{ result.details.query_time }}</span>
+          </div>
+          <div style="font-size:18px; font-weight:700; color:#fff; font-family:var(--font-mono);">
+            {{ result.value }}
+          </div>
+        </div>
+
+        <!-- Perimeter Block Action -->
+        <form method="post" action="{{ url_for('block_ioc_directly') }}">
+          <input type="hidden" name="value" value="{{ result.value }}">
+          <input type="hidden" name="type" value="{{ result.type }}">
+          <input type="hidden" name="system" value="Palo Alto NGFW">
+          <button class="btn danger" type="submit" data-confirm="Push {{ result.value }} to Edge Perimeter Drop list immediately?">
+            🛡️ Add to Perimeter Blocklist
+          </button>
+        </form>
+      </div>
+
+      <!-- Intel Breakdown Grid -->
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:16px;">
+        <div style="background:var(--bg-body); padding:12px; border-radius:6px; border:1px solid var(--border-subtle);">
+          <div class="tiny muted">Threat Risk Score</div>
+          <div style="font-size:20px; font-weight:700; color:{{ '#ef4444' if result.threat_score >= 75 else '#f59e0b' }}; font-family:var(--font-mono);">
+            {{ result.threat_score }} / 100
+          </div>
+        </div>
+
+        <div style="background:var(--bg-body); padding:12px; border-radius:6px; border:1px solid var(--border-subtle);">
+          <div class="tiny muted">VirusTotal Multi-Engine</div>
+          <div style="font-size:13px; font-weight:600; color:#fff; margin-top:4px;">
+            {{ result.details.virustotal }}
+          </div>
+        </div>
+
+        <div style="background:var(--bg-body); padding:12px; border-radius:6px; border:1px solid var(--border-subtle);">
+          <div class="tiny muted">AbuseIPDB Confidence</div>
+          <div style="font-size:13px; font-weight:600; color:#fff; margin-top:4px;">
+            {{ result.details.abuseipdb_confidence }}
+          </div>
+        </div>
+
+        <div style="background:var(--bg-body); padding:12px; border-radius:6px; border:1px solid var(--border-subtle);">
+          <div class="tiny muted">Threat Category</div>
+          <div style="font-size:13px; font-weight:600; color:var(--cyan); margin-top:4px;">
+            {{ result.details.category }}
+          </div>
+        </div>
+      </div>
+
+      {% if result.details.geo %}
+      <div class="tiny muted">
+        Geolocation: <b style="color:#fff;">{{ result.details.geo.country }} ({{ result.details.geo.city }})</b> &bull; Autonomous System: <b style="color:#fff;">{{ result.details.geo.asn }}</b>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tracked IOCs Table -->
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Active Threat Indicators Database</h2>
+        <div class="sub">Currently tracked indicators across alerts and threat feeds</div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <span class="pill critical">{{ blocked_count }} Blocked</span>
+        <span class="pill high">{{ malicious_count }} Malicious</span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Indicator Value</th>
+            <th>Reputation</th>
+            <th>Threat Score</th>
+            <th>Status</th>
+            <th>Recorded</th>
+            <th>Perimeter Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ioc in iocs %}
+          <tr>
+            <td>
+              <span class="ioc-type-badge">{{ ioc.ioc_type }}</span>
+            </td>
+            <td>
+              <span class="mono" style="font-weight:600; color:#fff;">{{ ioc.value }}</span>
+            </td>
+            <td>
+              <span class="pill {{ ioc.reputation|lower }}">{{ ioc.reputation }}</span>
+            </td>
+            <td>
+              <div class="threat-meter">
+                <span class="mono" style="font-weight:700; color:{{ '#ef4444' if ioc.threat_score >= 75 else '#f59e0b' }};">
+                  {{ ioc.threat_score }}
+                </span>
+                <div class="meter-bar" style="width:60px;">
+                  <div class="meter-fill" style="width:{{ ioc.threat_score }}%; background:{{ '#ef4444' if ioc.threat_score >= 75 else '#f59e0b' }};"></div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="pill {{ 'blocked' if ioc.status=='Blocked' else 'new' }}">{{ ioc.status }}</span>
+            </td>
+            <td class="tiny muted">
+              {{ ioc.created_at }}
+            </td>
+            <td>
+              {% if ioc.status != 'Blocked' %}
+              <form method="post" action="{{ url_for('block_ioc_directly') }}">
+                <input type="hidden" name="value" value="{{ ioc.value }}">
+                <input type="hidden" name="type" value="{{ ioc.ioc_type }}">
+                <button class="btn danger sm" type="submit" data-confirm="Push {{ ioc.value }} to perimeter firewall blocklist?">
+                  Block
+                </button>
+              </form>
+              {% else %}
+              <span class="tiny muted">Active Block</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">
+              No indicators recorded yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

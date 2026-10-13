@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="content">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">INCIDENT CONTAINMENT & ACTION AUDIT TRAIL</div>
+      <h1>Containment Operations & Rollback</h1>
+      <p>Comprehensive audit log of all automated and manual network isolation, firewall drops, and account suspension actions.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Active & Historical Containment Actions</h2>
+        <div class="sub">Full accountability log with 1-click disaster recovery / action rollback</div>
+      </div>
+      <span class="pill low">Immutable SOC Audit</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Action ID & Type</th>
+            <th>Target Entity</th>
+            <th>Security System</th>
+            <th>Executed By</th>
+            <th>Details</th>
+            <th>Status</th>
+            <th>Timestamp</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for act in actions %}
+          <tr>
+            <td>
+              <div style="font-weight:600; color:#fff;">#ACT-{{ '%04d'|format(act.id) }}</div>
+              <div class="tiny" style="color:var(--cyan); font-weight:600;">{{ act.action_type }}</div>
+            </td>
+            <td>
+              <span class="mono" style="font-weight:600; color:#fff;">{{ act.target }}</span>
+            </td>
+            <td>
+              <span style="font-weight:500; color:var(--text-dim);">{{ act.system }}</span>
+            </td>
+            <td>
+              <span class="tiny" style="color:var(--text-muted);">{{ act.executed_by }}</span>
+            </td>
+            <td>
+              <div class="tiny" style="max-width:260px; color:var(--text-dim);">{{ act.details }}</div>
+            </td>
+            <td>
+              <span class="pill {{ 'critical' if act.status=='Active' else 'medium' }}">{{ act.status }}</span>
+            </td>
+            <td class="tiny muted">
+              {{ act.timestamp }}
+            </td>
+            <td>
+              {% if act.status == 'Active' %}
+              <form method="post" action="{{ url_for('rollback_action', action_id=act.id) }}">
+                <button class="btn warning sm" type="submit" data-confirm="Roll back containment action '{{ act.action_type }}' for target {{ act.target }}?">
+                  ↩️ Rollback
+                </button>
+              </form>
+              {% else %}
+              <span class="tiny muted">Reverted</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" style="text-align:center; padding:30px; color:var(--text-muted);">
+              No containment operations executed yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

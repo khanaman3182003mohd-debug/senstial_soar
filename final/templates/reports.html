@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="content">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">SOC PERFORMANCE & EXECUTIVE METRICS</div>
+      <h1>Security Intelligence & SLA Reports</h1>
+      <p>Calculated incident metrics, automation efficiency ratios, and MITRE ATT&CK tactical coverage.</p>
+    </div>
+    <button class="btn secondary" onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 6 2 18 2 18 9"/>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <rect x="6" y="14" width="12" height="8"/>
+      </svg>
+      Export / Print PDF
+    </button>
+  </div>
+
+  <!-- SLA & Core Metrics Grid -->
+  <div class="grid stats">
+    <div class="panel">
+      <div class="stat-top">Mean Time To Detect (MTTD)</div>
+      <div class="stat-num" style="color:var(--emerald);">3.2m</div>
+      <div class="stat-foot">Automated SIEM alert parsing</div>
+    </div>
+
+    <div class="panel">
+      <div class="stat-top">Mean Time To Respond (MTTR)</div>
+      <div class="stat-num" style="color:var(--cyan);">7.8m</div>
+      <div class="stat-foot">Accelerated by response playbooks</div>
+    </div>
+
+    <div class="panel">
+      <div class="stat-top">Automated Response Ratio</div>
+      <div class="stat-num" style="color:var(--indigo);">74%</div>
+      <div class="stat-foot">Containment via SOAR workflows</div>
+    </div>
+
+    <div class="panel">
+      <div class="stat-top">Incident Resolution Rate</div>
+      <div class="stat-num">
+        {{ (resolved / total * 100)|round|int if total else 0 }}%
+      </div>
+      <div class="stat-foot">{{ resolved }} of {{ total }} cases resolved</div>
+    </div>
+  </div>
+
+  <div class="grid halves">
+    <!-- Incident Severity Distribution -->
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Incident Severity Breakdown</h2>
+        <span class="sub">Total: {{ total }} recorded</span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:14px; margin-top:10px;">
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span style="color:#f87171; font-weight:600;">Critical Severity</span>
+            <span class="mono">{{ critical }} cases</span>
+          </div>
+          <div class="meter-bar" style="width:100%; height:8px;">
+            <div class="meter-fill" style="width:{{ (critical / total * 100)|round|int if total else 0 }}%; background:var(--red);"></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span style="color:#fb923c; font-weight:600;">High Severity</span>
+            <span class="mono">{{ high }} cases</span>
+          </div>
+          <div class="meter-bar" style="width:100%; height:8px;">
+            <div class="meter-fill" style="width:{{ (high / total * 100)|round|int if total else 0 }}%; background:var(--orange);"></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span style="color:#fbbf24; font-weight:600;">Medium Severity</span>
+            <span class="mono">{{ medium }} cases</span>
+          </div>
+          <div class="meter-bar" style="width:100%; height:8px;">
+            <div class="meter-fill" style="width:{{ (medium / total * 100)|round|int if total else 0 }}%; background:var(--amber);"></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span style="color:#34d399; font-weight:600;">Low Severity</span>
+            <span class="mono">{{ low }} cases</span>
+          </div>
+          <div class="meter-bar" style="width:100%; height:8px;">
+            <div class="meter-fill" style="width:{{ (low / total * 100)|round|int if total else 0 }}%; background:var(--emerald);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MITRE ATT&CK Matrix Alignment -->
+    <div class="panel">
+      <div class="panel-head">
+        <h2>MITRE ATT&CK Matrix Alignment</h2>
+        <span class="sub">Tactics observed in active queue</span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card-alt); padding:10px 14px; border-radius:6px; border:1px solid var(--border-subtle);">
+          <div>
+            <div style="font-weight:600; color:#fff; font-size:13px;">T1110.001 - Password Guessing</div>
+            <div class="tiny muted">Credential Access &bull; Brute Force</div>
+          </div>
+          <span class="pill high">Covered</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card-alt); padding:10px 14px; border-radius:6px; border:1px solid var(--border-subtle);">
+          <div>
+            <div style="font-weight:600; color:#fff; font-size:13px;">T1486 - Data Encrypted for Impact</div>
+            <div class="tiny muted">Impact &bull; Ransomware Outbreak</div>
+          </div>
+          <span class="pill critical">Contained</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card-alt); padding:10px 14px; border-radius:6px; border:1px solid var(--border-subtle);">
+          <div>
+            <div style="font-weight:600; color:#fff; font-size:13px;">T1059.001 - PowerShell Execution</div>
+            <div class="tiny muted">Execution &bull; Living-off-the-Land</div>
+          </div>
+          <span class="pill high">Covered</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card-alt); padding:10px 14px; border-radius:6px; border:1px solid var(--border-subtle);">
+          <div>
+            <div style="font-weight:600; color:#fff; font-size:13px;">T1071.004 - DNS Tunneling & C2</div>
+            <div class="tiny muted">Command and Control &bull; Protocol Tunneling</div>
+          </div>
+          <span class="pill medium">Monitored</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

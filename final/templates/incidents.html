@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="content">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">DETECTION & TRIAGE // INCIDENT QUEUE</div>
+      <h1>Security Incidents & Cases</h1>
+      <p>Investigate incoming telemetry, review extracted IOC indicators, and execute response playbooks.</p>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn primary" data-modal-open="newIncidentModal">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Create Incident
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter & Search Toolbar -->
+  <div class="panel" style="margin-bottom:20px; padding:16px 20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Severity:</span>
+        <a class="btn {{ 'primary' if sev_filter=='all' else 'secondary' }} sm" href="{{ url_for('incidents', severity='all', status=stat_filter, q=q) }}">All</a>
+        <a class="btn {{ 'primary' if sev_filter=='critical' else 'secondary' }} sm" href="{{ url_for('incidents', severity='critical', status=stat_filter, q=q) }}">Critical</a>
+        <a class="btn {{ 'primary' if sev_filter=='high' else 'secondary' }} sm" href="{{ url_for('incidents', severity='high', status=stat_filter, q=q) }}">High</a>
+        <a class="btn {{ 'primary' if sev_filter=='medium' else 'secondary' }} sm" href="{{ url_for('incidents', severity='medium', status=stat_filter, q=q) }}">Medium</a>
+        <a class="btn {{ 'primary' if sev_filter=='low' else 'secondary' }} sm" href="{{ url_for('incidents', severity='low', status=stat_filter, q=q) }}">Low</a>
+      </div>
+
+      <div style="width:260px;">
+        <input id="incidentSearch" value="{{ q }}" placeholder="Search by title, source, IOC..." style="padding:8px 12px; font-size:12px;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Incident Table -->
+  <div class="panel">
+    <div class="table-wrap">
+      <table id="incidentTable">
+        <thead>
+          <tr>
+            <th>Incident ID & Title</th>
+            <th>Severity</th>
+            <th>Source</th>
+            <th>MITRE ATT&CK</th>
+            <th>Artifacts</th>
+            <th>Analyst</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inc in incidents %}
+          <tr>
+            <td>
+              <div class="incident-title">
+                <a href="{{ url_for('incident_detail', incident_id=inc.id) }}">
+                  #INC-{{ '%04d'|format(inc.id) }} — {{ inc.title }}
+                </a>
+              </div>
+              <div class="tiny muted" style="margin-top:3px;">
+                {{ inc.details[:75] }}{% if inc.details|length > 75 %}...{% endif %}
+              </div>
+            </td>
+            <td>
+              <span class="pill {{ inc.severity|lower }}">{{ inc.severity }}</span>
+            </td>
+            <td>
+              <span style="font-weight:500; color:var(--text-dim);">{{ inc.source }}</span>
+            </td>
+            <td>
+              <span class="tiny mono" style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; color:var(--cyan);">
+                {{ inc.mitre_technique }}
+              </span>
+            </td>
+            <td>
+              <span class="tiny" style="color:var(--text-muted); font-weight:600;">
+                {{ inc.artifacts|length }} IOCs
+              </span>
+            </td>
+            <td>
+              <span class="tiny" style="color:#fff;">{{ inc.assigned_to }}</span>
+            </td>
+            <td>
+              <span class="pill {{ inc.status|lower|replace(' ', '-') }}">{{ inc.status }}</span>
+            </td>
+            <td class="tiny muted">
+              {{ inc.created_at }}
+            </td>
+            <td>
+              <a class="btn secondary sm" href="{{ url_for('incident_detail', incident_id=inc.id) }}">
+                War Room &rarr;
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" style="text-align:center; padding:40px; color:var(--text-muted);">
+              No incidents found matching current filters.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Create Incident Modal -->
+<div class="modal-overlay" id="newIncidentModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h2 style="font-size:16px; color:#fff;">Register Security Incident</h2>
+        <span style="font-size:12px; color:var(--text-muted);">Manual case intake with automated IOC extraction & enrichment</span>
+      </div>
+      <button class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <form method="post" action="{{ url_for('new_incident') }}">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Incident Title *</label>
+          <input name="title" required placeholder="e.g. Credential Stuffing Surge on Active Directory DC01" maxlength="140">
+        </div>
+
+        <div class="field">
+          <label>Severity Level</label>
+          <select name="severity">
+            <option value="Critical">Critical</option>
+            <option value="High" selected>High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Detection Source</label>
+          <input name="source" placeholder="e.g. Wazuh SIEM, CrowdStrike Falcon" value="Manual SOC Analyst">
+        </div>
+
+        <div class="field">
+          <label>Assigned Lead</label>
+          <select name="assigned_to">
+            <option>Analyst Sarah</option>
+            <option>SOC Lead Alex</option>
+            <option>Auto-Triage Bot</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>MITRE ATT&CK Technique</label>
+          <select name="mitre_technique">
+            <option>T1110.001 - Password Guessing</option>
+            <option>T1059.001 - PowerShell Scripting</option>
+            <option>T1486 - Data Encrypted for Impact</option>
+            <option>T1566.001 - Spearphishing Attachment</option>
+            <option>T1071.004 - DNS Tunneling</option>
+            <option>T1098 - Account Manipulation</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label>Description / Analyst Triage Notes</label>
+          <textarea name="details" rows="3" placeholder="Context, detection alert body, impacted business systems..."></textarea>
+        </div>
+
+        <div class="field full">
+          <label>Raw IOCs / Artifacts (one per line: IPs, Domains, Hashes, Hostnames)</label>
+          <textarea name="iocs_raw" rows="3" placeholder="185.220.101.5&#10;evil-command-c2.net&#10;e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855&#10;WS-FINANCE-02"></textarea>
+          <span style="font-size:11px; color:var(--text-muted);">Indicators will be parsed, analyzed against threat intel, and linked to this incident.</span>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+        <button class="btn secondary" type="button" data-modal-close>Cancel</button>
+        <button class="btn primary" type="submit">Ingest & Initialize Incident</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

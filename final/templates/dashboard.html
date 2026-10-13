@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="content">
+  <!-- Heading with Active Threat Status -->
+  <div class="heading">
+    <div>
+      <div class="eyebrow">SECURITY OPERATIONS CENTER // RADAR ACTIVE</div>
+      <h1>SOC Command Center & Tactical Response</h1>
+      <p>Active operator: <b style="color:#fff;">{{ current_user.name }}</b> ({{ current_user.role }}) &bull; Clearance: <span class="mono" style="color:var(--cyan);">{{ current_user.clearance }}</span></p>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <a class="btn secondary" href="{{ url_for('copilot') }}" style="border-color:rgba(139,92,246,0.4); color:#c4b5fd;">
+        🤖 Sentinel AI Copilot
+      </a>
+      <a class="btn primary" href="{{ url_for('incidents') }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        </svg>
+        Manage Incidents
+      </a>
+    </div>
+  </div>
+
+  <!-- Attack Simulator Banner -->
+  <div class="sim-banner">
+    <div class="sim-banner-left">
+      <div class="sim-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="sim-title">Live Attack Telemetry Simulator</div>
+        <div class="sim-desc">Trigger instant synthetic security events to test end-to-end automation pipelines and containment gates.</div>
+      </div>
+    </div>
+    <div class="sim-buttons">
+      <form method="post" action="{{ url_for('simulate_attack') }}" style="display:inline;">
+        <input type="hidden" name="type" value="bruteforce">
+        <button class="btn secondary sm" type="submit">⚡ SSH Brute Force</button>
+      </form>
+      <form method="post" action="{{ url_for('simulate_attack') }}" style="display:inline;">
+        <input type="hidden" name="type" value="ransomware">
+        <button class="btn danger sm" type="submit">☣️ Ransomware Canary</button>
+      </form>
+      <form method="post" action="{{ url_for('simulate_attack') }}" style="display:inline;">
+        <input type="hidden" name="type" value="phishing">
+        <button class="btn warning sm" type="submit">🎣 Spearphishing Macro</button>
+      </form>
+      <form method="post" action="{{ url_for('simulate_attack') }}" style="display:inline;">
+        <input type="hidden" name="type" value="c2">
+        <button class="btn secondary sm" type="submit">🌐 C2 Beaconing</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- High-Level SOC Metrics -->
+  <div class="grid stats">
+    <div class="panel">
+      <div class="stat-top">
+        <span>Total Security Incidents</span>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat-num">{{ total }}</div>
+      <div class="stat-foot">
+        <span class="trend-up">{{ open_count }} Open Cases</span> &bull; {{ critical }} Critical
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="stat-top">
+        <span>Active Containment Actions</span>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat-num" style="color:var(--cyan);">{{ containment_count }}</div>
+      <div class="stat-foot">
+        <span class="trend-info">Firewall Drops & Host Isolations</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="stat-top">
+        <span>Blocked Threat Indicators</span>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat-num" style="color:#f87171;">{{ blocked_iocs }}</div>
+      <div class="stat-foot">
+        <span class="trend-up">Synchronized with Perimeter Edge</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="stat-top">
+        <span>Playbook Automation Runs</span>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat-num" style="color:#a78bfa;">{{ playbook_runs }}</div>
+      <div class="stat-foot">
+        <span class="trend-info">74% Automation Response Rate</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Cyber Charts Row -->
+  <div class="grid halves" style="margin-bottom:24px;">
+    <!-- Line Chart: Attack Volume Velocity -->
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Telemetry Ingestion & Automation Velocity</h2>
+          <div class="sub">Incoming SIEM events vs Automated SOAR response actions</div>
+        </div>
+        <span class="pill low">Live Stream</span>
+      </div>
+      <div style="height:220px; position:relative;">
+        <canvas id="velocityChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Donut Chart: Threat Severity Distribution -->
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Incident Severity Matrix</h2>
+          <div class="sub">Triage priority allocation across active queue</div>
+        </div>
+        <span class="tiny mono" style="color:var(--cyan);">NIST SP 800-61</span>
+      </div>
+      <div style="height:220px; display:flex; align-items:center; justify-content:center;">
+        <div style="width:200px; height:200px;">
+          <canvas id="severityDonutChart"></canvas>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-left:24px;">
+          <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#ef4444;"></span>
+            <span>Critical: <b>{{ critical }}</b></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#f97316;"></span>
+            <span>High: <b>{{ high }}</b></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#f59e0b;"></span>
+            <span>Medium: <b>{{ medium }}</b></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#10b981;"></span>
+            <span>Low: <b>{{ low }}</b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Incident Queue & Operational Feeds -->
+  <div class="grid two-col">
+    <!-- Left Column: Recent Incidents -->
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Active Incident War Queue</h2>
+          <div class="sub">Latest threat telemetry requiring analyst review & response</div>
+        </div>
+        <a class="btn secondary sm" href="{{ url_for('incidents') }}">View All Queue &rarr;</a>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Incident Details</th>
+              <th>Severity</th>
+              <th>MITRE Technique</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inc in incidents %}
+            <tr>
+              <td>
+                <div class="incident-title">
+                  <a href="{{ url_for('incident_detail', incident_id=inc.id) }}">
+                    #INC-{{ '%04d'|format(inc.id) }} — {{ inc.title }}
+                  </a>
+                </div>
+                <div class="tiny muted" style="margin-top:4px;">
+                  Source: <b style="color:var(--text-dim)">{{ inc.source }}</b> &bull; {{ inc.created_at }} &bull; Assigned: <span style="color:#fff;">{{ inc.assigned_to }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="pill {{ inc.severity|lower }}">{{ inc.severity }}</span>
+              </td>
+              <td>
+                <span class="tiny mono" style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px; color:var(--cyan);">
+                  {{ inc.mitre_technique }}
+                </span>
+              </td>
+              <td>
+                <span class="pill {{ inc.status|lower|replace(' ', '-') }}">{{ inc.status }}</span>
+              </td>
+              <td>
+                <a class="btn secondary sm" href="{{ url_for('incident_detail', incident_id=inc.id) }}">
+                  War Room &rarr;
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">
+                No incidents detected in queue. Launch an attack simulation above.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Column: Playbook Executions & Response Activity -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <!-- Playbook Runs Feed -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Playbook Execution Trail</h2>
+          <a class="sub" href="{{ url_for('playbooks') }}" style="text-decoration:none; color:var(--cyan);">Hub &rarr;</a>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          {% for ex in recent_executions %}
+          <div style="background:var(--bg-card-alt); border:1px solid var(--border-subtle); border-radius:8px; padding:12px 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-weight:700; font-size:12px; color:#fff;">{{ ex.playbook_name }}</span>
+              <span class="pill {{ 'warning' if ex.status=='Awaiting Approval' else ('low' if ex.status=='Completed' else 'high') }}">
+                {{ ex.status }}
+              </span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);">
+              <span>Step {{ ex.current_step }} of {{ ex.total_steps }} &bull; {{ ex.triggered_by }}</span>
+              <span>{{ ex.started_at }}</span>
+            </div>
+
+            {% if ex.status == 'Awaiting Approval' %}
+            <form method="post" action="{{ url_for('approve_playbook_step', exec_id=ex.id) }}" style="margin-top:10px;">
+              <button class="btn warning sm" style="width:100%; justify-content:center;" type="submit">
+                ⚠️ Review & Approve Containment Gate
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="tiny muted" style="padding:15px; text-align:center;">No recent playbook executions.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Recent Containment Actions -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Active Containment Actions</h2>
+          <a class="sub" href="{{ url_for('actions') }}" style="text-decoration:none; color:var(--cyan);">Audit &rarr;</a>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          {% for act in recent_actions %}
+          <div style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-card-alt); padding:10px 12px; border-radius:6px; border:1px solid var(--border-subtle);">
+            <div>
+              <div style="font-size:12px; font-weight:700; color:#fff;">
+                {{ act.action_type }}: <span class="mono" style="color:var(--cyan);">{{ act.target }}</span>
+              </div>
+              <div class="tiny muted">{{ act.system }} &bull; {{ act.timestamp }}</div>
+            </div>
+            <span class="pill {{ 'critical' if act.status=='Active' else 'medium' }}">{{ act.status }}</span>
+          </div>
+          {% else %}
+          <div class="tiny muted" style="padding:15px; text-align:center;">No containment actions taken yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Inject chart data for Chart.js -->
+<script>
+  window.SOAR_CHART_DATA = {{ chart_data|tojson }};
+</script>
+{% endblock %}

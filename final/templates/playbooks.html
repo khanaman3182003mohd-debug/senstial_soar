@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="content">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">AUTOMATION & ORCHESTRATION ENGINE</div>
+      <h1>Response Playbooks & Workflows</h1>
+      <p>Standardized, multi-vendor automated response pipelines with built-in human-in-the-loop approval gates.</p>
+    </div>
+  </div>
+
+  <!-- Playbooks Catalog Grid -->
+  <div class="grid three-col" style="margin-bottom:30px;">
+    {% for pb in playbooks %}
+    <div class="panel" style="display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <span class="pill {{ 'critical' if pb.severity_trigger=='Critical' else ('high' if pb.severity_trigger=='High' else 'medium') }}">
+            Trigger: {{ pb.severity_trigger }}
+          </span>
+          <span class="tiny" style="color:var(--cyan); font-weight:600;">{{ pb.category }}</span>
+        </div>
+
+        <h3 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:8px;">{{ pb.name }}</h3>
+        <p style="font-size:12px; color:var(--text-dim); line-height:1.5; margin-bottom:16px;">
+          {{ pb.description }}
+        </p>
+
+        <!-- Step Workflow Breakdown -->
+        <div class="stepper">
+          {% for s in pb.steps %}
+          <div class="step-node {{ 'awaiting' if s.requires_approval else '' }}">
+            <div class="step-num">{{ '%02d'|format(s.id) }}</div>
+            <div class="step-info">
+              <div class="step-title">
+                {{ s.title }}
+                {% if s.requires_approval %}
+                <span style="font-size:10px; color:#fcd34d; margin-left:4px;">[Approval Gate]</span>
+                {% endif %}
+              </div>
+              <div class="step-system">{{ s.system }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Execution Form / Trigger -->
+      <div style="margin-top:16px; pt:16px; border-top:1px solid var(--border-subtle);">
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-bottom:12px;">
+          <span>Runs: <b style="color:#fff;">{{ pb.runs_count }}</b></span>
+          <span>Last Run: {{ pb.last_run }}</span>
+        </div>
+
+        <form method="post" action="{{ url_for('run_playbook', pb_id=pb.id) }}" style="display:flex; gap:8px;">
+          <select name="incident_id" style="font-size:11px; padding:6px 10px;">
+            <option value="">Simulation Mode</option>
+            {% for inc in incidents %}
+            <option value="{{ inc.id }}">#INC-{{ '%04d'|format(inc.id) }} &bull; {{ inc.title[:24] }}</option>
+            {% endfor %}
+          </select>
+          <input type="hidden" name="triggered_by" value="SOC Analyst Manual">
+          <button class="btn primary sm" type="submit">Run ⚡</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Playbook Executions Trail -->
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Playbook Execution History & Audit Logs</h2>
+        <div class="sub">Real-time status of automated workflows, approval decisions, and step traces</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Execution ID & Playbook</th>
+            <th>Target Incident</th>
+            <th>Triggered By</th>
+            <th>Progress</th>
+            <th>Status</th>
+            <th>Timeline</th>
+            <th>Gate Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ex in executions %}
+          <tr>
+            <td>
+              <div style="font-weight:600; color:#fff;">#EXEC-{{ '%04d'|format(ex.id) }} &bull; {{ ex.playbook_name }}</div>
+              <div class="tiny muted" style="margin-top:2px;">Workflow ID: <span class="mono">{{ ex.playbook_id }}</span></div>
+            </td>
+            <td>
+              {% if ex.incident_id %}
+              <a href="{{ url_for('incident_detail', incident_id=ex.incident_id) }}" style="color:var(--cyan); text-decoration:none; font-weight:600;">
+                #INC-{{ '%04d'|format(ex.incident_id) }}
+              </a>
+              {% else %}
+              <span class="tiny muted">Standalone Simulation</span>
+              {% endif %}
+            </td>
+            <td>
+              <span style="font-size:12px; color:var(--text-dim);">{{ ex.triggered_by }}</span>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="mono tiny">{{ ex.current_step }}/{{ ex.total_steps }}</span>
+                <div class="meter-bar" style="width:50px;">
+                  <div class="meter-fill" style="width:{{ (ex.current_step / ex.total_steps * 100)|round|int }}%; background:var(--cyan);"></div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="pill {{ 'warning' if ex.status=='Awaiting Approval' else ('low' if ex.status=='Completed' else 'high') }}">
+                {{ ex.status }}
+              </span>
+            </td>
+            <td class="tiny muted">
+              Started: {{ ex.started_at }}
+              {% if ex.completed_at %}<br>Done: {{ ex.completed_at }}{% endif %}
+            </td>
+            <td>
+              {% if ex.status == 'Awaiting Approval' %}
+              <form method="post" action="{{ url_for('approve_playbook_step', exec_id=ex.id) }}">
+                <button class="btn warning sm" type="submit">
+                  Approve Gate ⚠️
+                </button>
+              </form>
+              {% else %}
+              <span class="tiny muted">Verified</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">
+              No playbook execution logs recorded yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

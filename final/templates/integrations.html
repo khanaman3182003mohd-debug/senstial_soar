@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="content">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">ECOSYSTEM ORCHESTRATION & CONNECTORS</div>
+      <h1>Security Stack Integrations</h1>
+      <p>Bidirectional API connectors for SIEM alert ingestion, threat intelligence enrichment, and automated perimeter containment.</p>
+    </div>
+  </div>
+
+  <div class="grid halves">
+    {% for int in integrations %}
+    <div class="integration-card">
+      <div>
+        <div class="integration-top">
+          <div class="int-meta">
+            <h3>{{ int.name }}</h3>
+            <span>{{ int.type }}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="pill low">
+              <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+              {{ int.status }}
+            </span>
+          </div>
+        </div>
+
+        <p style="font-size:12px; color:var(--text-dim); line-height:1.5; margin:14px 0;">
+          {{ int.desc }}
+        </p>
+
+        <div class="int-stats">
+          <span>API: <b>{{ int.api_version }}</b></span>
+          <span>Latency: <b style="color:var(--emerald);">{{ int.latency }}</b></span>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; pt:12px; border-top:1px solid var(--border-subtle);">
+        <span class="tiny muted">{{ int.stats }}</span>
+        <button class="btn secondary sm" data-test-integration="{{ int.id }}">
+          ⚡ Test Connection
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

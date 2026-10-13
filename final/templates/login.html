@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Authentication // SOAR Sentinel Terminal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-body">
+  <div class="cyber-grid-bg"></div>
+  <div class="radar-scanline"></div>
+
+  <div class="login-container">
+    <div class="login-box">
+      <!-- Terminal Brand -->
+      <div style="text-align:center; margin-bottom:28px;">
+        <div class="brand-icon" style="width:52px; height:52px; margin:0 auto 14px; box-shadow:0 0 25px rgba(6,182,212,0.6);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:28px; height:28px;">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="eyebrow" style="letter-spacing:2px;">SECURITY OPERATIONS CENTER // TERMINAL ACCESS</div>
+        <h1 style="font-size:26px; color:#fff; font-weight:800; letter-spacing:-0.5px;">SOAR SENTINEL</h1>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Multi-Factor Role Authentication & Session Gateway</p>
+      </div>
+
+      <!-- Quick 1-Click Role Switcher -->
+      <div style="margin-bottom:24px;">
+        <div class="tiny" style="color:var(--cyan); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
+          ⚡ Quick Select Authorized Operator:
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          {% for email, u in users.items() %}
+          <form method="post" action="{{ url_for('login') }}">
+            <input type="hidden" name="email" value="{{ email }}">
+            <button type="submit" class="role-card-btn" style="border-left: 3px solid {{ u.color }};">
+              <div class="avatar" style="background:{{ u.color }}; color:#fff;">{{ u.avatar }}</div>
+              <div style="flex:1; text-align:left;">
+                <div style="font-weight:700; color:#fff; font-size:13px;">{{ u.name }}</div>
+                <div class="tiny" style="color:var(--text-muted);">{{ u.role }} &bull; <span style="color:{{ u.color }};">{{ u.clearance }}</span></div>
+              </div>
+              <span class="btn sm secondary" style="pointer-events:none;">Enter &rarr;</span>
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Manual Login Form -->
+      <div style="border-top:1px solid var(--border-subtle); padding-top:20px;">
+        <form method="post" action="{{ url_for('login') }}">
+          <div style="margin-bottom:14px;">
+            <label style="display:block; margin-bottom:6px; font-size:11px; text-transform:uppercase; letter-spacing:0.8px;">Operator Corporate Email</label>
+            <input name="email" value="sarah@soar.corp" required placeholder="analyst@soar.corp" style="font-family:var(--font-mono); font-size:12px;">
+          </div>
+          <div style="margin-bottom:18px;">
+            <label style="display:block; margin-bottom:6px; font-size:11px; text-transform:uppercase; letter-spacing:0.8px;">Hardware Security Token / Key</label>
+            <input type="password" value="••••••••••••••••" placeholder="Enter hardware token" style="font-family:var(--font-mono); font-size:12px;">
+          </div>
+          <button class="btn primary" type="submit" style="width:100%; justify-content:center; padding:11px; font-weight:700;">
+            Authenticate Terminal Session &rarr;
+          </button>
+        </form>
+      </div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:24px; padding-top:16px; border-top:1px solid var(--border-subtle); font-size:11px; color:var(--text-muted);">
+        <span>Security Level: <b>RESTRICTED</b></span>
+        <span>TLS 1.3 / AES-256-GCM</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
