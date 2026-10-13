@@ -1,4 +1,3 @@
-# senstial_soar
 # SOAR Sentinel — Local Analyst Workspace (Full-Stack, Secure)
 
 A self-contained **Flask + SQLite** project: a Security Orchestration, Automation and Response (SOAR) learning platform with real authentication, role-based access, audit logging, a modern UI, and an interactive assistant.
